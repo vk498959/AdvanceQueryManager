@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full SQL & Advanced Excel Query Engine</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="./js1.js"></script>
+    <!-- SheetJS CDN for Excel parsing -->
+    <script src="./js2.js"></script>
+    <!-- AlaSQL CDN for Full SQL Query Support -->
+    <script src="./js3.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md py-4 px-6 mb-6">
+        <h1 class="text-2xl font-bold">🚀 Full SQL & Advanced Excel Query Engine</h1>
+        <p class="text-indigo-200 text-sm">Write raw SQL queries or use advanced visual builders (WHERE, JOIN, GROUP BY, HAVING, ORDER BY, LIMIT, DISTINCT, Duplicates).</p>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 flex-grow w-full space-y-6 pb-12">
+        
+        <!-- File Upload Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">📁 Upload Dataset 1 (Table: <code class="bg-slate-100 text-indigo-600 px-1.5 py-0.5 rounded">dataA</code>)</label>
+                <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"/>
+                <p id="infoA" class="text-xs text-slate-400 mt-1">No file loaded.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">📁 Upload Dataset 2 (Table: <code class="bg-slate-100 text-emerald-600 px-1.5 py-0.5 rounded">dataB</code> - Optional)</label>
+                <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"/>
+                <p id="infoB" class="text-xs text-slate-400 mt-1">No file loaded.</p>
+            </div>
+        </div>
+
+        <!-- Query Control Panel -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-lg font-bold text-slate-800">⚙️ Query Mode & Builder</h2>
+                <div class="flex space-x-2">
+                    <button id="modeVisualBtn" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition">Visual Builder</button>
+                    <button id="modeSqlBtn" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 text-slate-700 transition">Raw SQL Console</button>
+                </div>
+            </div>
+            
+            <!-- Visual Builder View -->
+            <div id="visualBuilderSection" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Operation</label>
+                        <select id="opType" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="subset">Subset / Filter (WHERE)</option>
+                            <option value="match">Match / Join (JOIN)</option>
+                            <option value="union">Union (UNIQUE)</option>
+                            <option value="union_all">Union All</option>
+                            <option value="groupby">Group By & Having</option>
+                            <option value="orderby">Order By & Limit (SORT)</option>
+                            <option value="distinct">Select Distinct</option>
+                            <option value="duplicates">Duplicate Row Analysis</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Controls Container -->
+                    <div id="dynamicControls" class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Raw SQL Console View -->
+            <div id="sqlConsoleSection" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">SQL Query Editor (Refer to tables as <code class="text-indigo-600">?</code> or <code class="text-indigo-600">dataA</code> / <code class="text-emerald-600">dataB</code>)</label>
+                    <textarea id="sqlInput" rows="3" class="w-full font-mono text-sm border rounded-lg p-3 bg-slate-900 text-emerald-400 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="SELECT * FROM ? WHERE Column1 > 10 ORDER BY Column2 DESC LIMIT 50"></textarea>
+                </div>
+                <div class="text-xs text-slate-500 flex justify-between">
+                    <span>💡 Tip: For single table queries, use <code class="bg-slate-100 px-1 rounded">SELECT * FROM ? WHERE ...</code>. For joins: <code class="bg-slate-100 px-1 rounded">SELECT * FROM ? AS a JOIN ? AS b ON a.id = b.id</code></span>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button id="runQueryBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-lg shadow transition text-sm">
+                    🚀 Run Query / Execute SQL
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">📋 Query Result View</h2>
+                    <p id="rowCount" class="text-xs text-slate-500">0 rows returned.</p>
+                </div>
+                <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition hidden">
+                    📥 Export to Excel (.xlsx)
+                </button>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto max-h-96 border rounded-lg">
+                <table id="resultTable" class="w-full text-left border-collapse text-sm">
+                    <thead id="tableHead" class="bg-slate-100 sticky top-0 text-slate-700">
+                        <tr><th class="p-3">Upload files and run a query to see results.</th></tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200">
+                        <!-- Rows rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- App Logic -->
+    <script>
+        let dataA = [];
+        let dataB = [];
+        let columnsA = [];
+        let columnsB = [];
+        let currentResult = [];
+        let isSqlMode = false;
+
+        // Mode Switching
+        document.getElementById('modeVisualBtn').addEventListener('click', () => {
+            isSqlMode = false;
+            document.getElementById('modeVisualBtn').className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition';
+            document.getElementById('modeSqlBtn').className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 text-slate-700 transition';
+            document.getElementById('visualBuilderSection').classList.remove('hidden');
+            document.getElementById('sqlConsoleSection').classList.add('hidden');
+        });
+
+        document.getElementById('modeSqlBtn').addEventListener('click', () => {
+            isSqlMode = true;
+            document.getElementById('modeSqlBtn').className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition';
+            document.getElementById('modeVisualBtn').className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 text-slate-700 transition';
+            document.getElementById('sqlConsoleSection').classList.remove('hidden');
+            document.getElementById('visualBuilderSection').classList.add('hidden');
+        });
+
+        function handleFileUpload(e, datasetKey) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                if (datasetKey === 'A') {
+                    dataA = json;
+                    columnsA = json.length > 0 ? Object.keys(json[0]) : [];
+                    document.getElementById('infoA').innerText = `${file.name} loaded (${dataA.length} rows, ${columnsA.length} cols)`;
+                    if (!isSqlMode && document.getElementById('sqlInput').value === '') {
+                        document.getElementById('sqlInput').value = 'SELECT * FROM ? WHERE ' + (columnsA[0] || '1') + ' IS NOT NULL';
+                    }
+                } else {
+                    dataB = json;
+                    columnsB = json.length > 0 ? Object.keys(json[0]) : [];
+                    document.getElementById('infoB').innerText = `${file.name} loaded (${dataB.length} rows, ${columnsB.length} cols)`;
+                }
+                updateDynamicControls();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        document.getElementById('fileA').addEventListener('change', (e) => handleFileUpload(e, 'A'));
+        document.getElementById('fileB').addEventListener('change', (e) => handleFileUpload(e, 'B'));
+        document.getElementById('opType').addEventListener('change', updateDynamicControls);
+
+        function updateDynamicControls() {
+            const op = document.getElementById('opType').value;
+            const container = document.getElementById('dynamicControls');
+            container.innerHTML = '';
+
+            if (op === 'subset') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Column</label>
+                        <select id="subCol" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Condition</label>
+                        <select id="subCond" class="w-full border rounded-lg p-2 text-sm bg-slate-50">
+                            <option value="=">Equals (=)</option>
+                            <option value="LIKE">Contains (LIKE)</option>
+                            <option value=">">Greater Than (&gt;)</option>
+                            <option value="<">Less Than (&lt;)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Value</label>
+                        <input type="text" id="subVal" placeholder="Enter value..." class="w-full border rounded-lg p-2 text-sm bg-slate-50"/>
+                    </div>
+                `;
+            } else if (op === 'match') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Table A Key</label>
+                        <select id="matchKeyA" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Table B Key</label>
+                        <select id="matchKeyB" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsB.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Join Type</label>
+                        <select id="joinType" class="w-full border rounded-lg p-2 text-sm bg-slate-50">
+                            <option value="INNER JOIN">INNER JOIN</option>
+                            <option value="LEFT JOIN">LEFT JOIN</option>
+                        </select>
+                    </div>
+                `;
+            } else if (op === 'groupby') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Group By Column</label>
+                        <select id="groupCol" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Aggregate Function & Column</label>
+                        <div class="flex space-x-1">
+                            <select id="aggFunc" class="border rounded-lg p-2 text-sm bg-slate-50 w-1/2">
+                                <option value="COUNT">COUNT</option>
+                                <option value="SUM">SUM</option>
+                                <option value="AVG">AVG</option>
+                            </select>
+                            <select id="aggCol" class="border rounded-lg p-2 text-sm bg-slate-50 w-1/2">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Having Minimum Count/Sum (>)</label>
+                        <input type="number" id="havingVal" placeholder="Optional threshold..." class="w-full border rounded-lg p-2 text-sm bg-slate-50"/>
+                    </div>
+                `;
+            } else if (op === 'orderby') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Sort Column</label>
+                        <select id="sortCol" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Direction</label>
+                        <select id="sortDir" class="w-full border rounded-lg p-2 text-sm bg-slate-50">
+                            <option value="ASC">ASC</option>
+                            <option value="DESC">DESC</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Limit Rows</label>
+                        <input type="number" id="limitVal" value="100" class="w-full border rounded-lg p-2 text-sm bg-slate-50"/>
+                    </div>
+                `;
+            } else if (op === 'distinct') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Distinct Column</label>
+                        <select id="distCol" class="w-full border rounded-lg p-2 text-sm bg-slate-50">${columnsA.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    </div>
+                `;
+            } else if (op === 'duplicates') {
+                container.innerHTML = `
+                    <div class="md:col-span-3 text-sm text-slate-600 flex items-center bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        ℹ️ Scans Dataset 1 for duplicate rows, adds a <strong>Duplicate_Count</strong> column, and sorts duplicates to the top.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<div class="md:col-span-3 text-sm text-slate-500 flex items-center">Combines rows of Dataset 1 and Dataset 2 matching column structures.</div>`;
+            }
+        }
+
+        // Run Query Execution
+        document.getElementById('runQueryBtn').addEventListener('click', () => {
+            if (dataA.length === 0) { alert('Please load Dataset 1 first.'); return; }
+            currentResult = [];
+
+            try {
+                if (isSqlMode) {
+                    // Raw SQL Mode via AlaSQL
+                    const sql = document.getElementById('sqlInput').value;
+                    // AlaSQL supports running against JS variables dataA and dataB
+                    currentResult = alasql(sql, [dataA, dataB]);
+                } else {
+                    // Visual Builder translated to SQL / AlaSQL execution
+                    const op = document.getElementById('opType').value;
+
+                    if (op === 'subset') {
+                        const col = document.getElementById('subCol').value;
+                        const cond = document.getElementById('subCond').value;
+                        const val = document.getElementById('subVal').value;
+                        
+                        let query = '';
+                        if (cond === 'LIKE') {
+                            query = `SELECT * FROM ? WHERE [${col}] LIKE '%${val}%'`;
+                        } else if (cond === '=') {
+                            query = `SELECT * FROM ? WHERE [${col}] = '${val}'`;
+                        } else {
+                            query = `SELECT * FROM ? WHERE [${col}] ${cond} ${Number(val) || 0}`;
+                        }
+                        currentResult = alasql(query, [dataA]);
+                    } else if (op === 'match') {
+                        if (dataB.length === 0) { alert('Please load Dataset 2 for Joins.'); return; }
+                        const keyA = document.getElementById('matchKeyA').value;
+                        const keyB = document.getElementById('matchKeyB').value;
+                        const joinType = document.getElementById('joinType').value;
+
+                        const query = `SELECT * FROM ? AS a ${joinType} ? AS b ON a.[${keyA}] = b.[${keyB}]`;
+                        currentResult = alasql(query, [dataA, dataB]);
+                    } else if (op === 'union' || op === 'union_all') {
+                        if (dataB.length === 0) { alert('Please load Dataset 2 for Unions.'); return; }
+                        const modifier = op === 'union' ? 'UNION' : 'UNION ALL';
+                        const query = `SELECT * FROM ? ${modifier} SELECT * FROM ?`;
+                        currentResult = alasql(query, [dataA, dataB]);
+                    } else if (op === 'groupby') {
+                        const gCol = document.getElementById('groupCol').value;
+                        const aFunc = document.getElementById('aggFunc').value;
+                        const aCol = document.getElementById('aggCol').value;
+                        const having = document.getElementById('havingVal').value;
+
+                        let query = `SELECT [${gCol}], ${aFunc}([${aCol}]) AS AggResult FROM ? GROUP BY [${gCol}]`;
+                        if (having !== '') {
+                            query += ` HAVING ${aFunc}([${aCol}]) > ${Number(having)}`;
+                        }
+                        currentResult = alasql(query, [dataA]);
+                    } else if (op === 'orderby') {
+                        const sCol = document.getElementById('sortCol').value;
+                        const sDir = document.getElementById('sortDir').value;
+                        const limit = document.getElementById('limitVal').value || 100;
+
+                        const query = `SELECT TOP ${limit} * FROM ? ORDER BY [${sCol}] ${sDir}`;
+                        currentResult = alasql(query, [dataA]);
+                    } else if (op === 'distinct') {
+                        const dCol = document.getElementById('distCol').value;
+                        const query = `SELECT DISTINCT [${dCol}] FROM ?`;
+                        currentResult = alasql(query, [dataA]);
+                    } else if (op === 'duplicates') {
+                        // Custom grouping for row duplicates count
+                        const rowCounts = new Map();
+                        dataA.forEach(row => {
+                            const str = JSON.stringify(row);
+                            rowCounts.set(str, (rowCounts.get(str) || 0) + 1);
+                        });
+
+                        currentResult = dataA.map(row => ({
+                            ...row,
+                            Duplicate_Count: rowCounts.get(JSON.stringify(row))
+                        })).sort((a, b) => b.Duplicate_Count - a.Duplicate_Count);
+                    }
+                }
+
+                renderTable(currentResult);
+            } catch (err) {
+                alert('SQL Error: ' + err.message);
+            }
+        });
+
+        // Render Table Function
+        function renderTable(data) {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            const rowCount = document.getElementById('rowCount');
+            const exportBtn = document.getElementById('exportBtn');
+
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            if (!Array.isArray(data)) {
+                data = [data]; // handle scalar results if any
+            }
+
+            rowCount.innerText = `${data.length} rows returned.`;
+
+            if (data.length === 0) {
+                thead.innerHTML = `<tr><th class="p-3 text-slate-500">No records found.</th></tr>`;
+                exportBtn.classList.add('hidden');
+                return;
+            }
+
+            exportBtn.classList.remove('hidden');
+            const cols = Object.keys(data[0]);
+
+            let headerRow = '<tr>';
+            cols.forEach(c => headerRow += `<th class="p-3 border-b font-semibold bg-slate-100">${c}</th>`);
+            headerRow += '</tr>';
+            thead.innerHTML = headerRow;
+
+            const previewData = data.slice(0, 500);
+            previewData.forEach(row => {
+                let tr = '<tr class="hover:bg-slate-50">';
+                cols.forEach(c => {
+                    const val = row[c] !== undefined && row[c] !== null ? row[c] : '';
+                    const isDup = c === 'Duplicate_Count' && Number(val) > 1;
+                    const cellClass = isDup ? 'p-3 border-b text-red-600 font-bold bg-red-50' : 'p-3 border-b text-slate-600 truncate max-w-xs';
+                    tr += `<td class="${cellClass}">${val}</td>`;
+                });
+                tr += '</tr>';
+                tbody.innerHTML += tr;
+            });
+
+            if (data.length > 500) {
+                tbody.innerHTML += `<tr><td colspan="${cols.length}" class="p-3 text-center text-xs text-slate-400">Showing first 500 rows out of ${data.length} total rows.</td></tr>`;
+            }
+        }
+
+        // Export to Excel
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if (currentResult.length === 0) return;
+            const worksheet = XLSX.utils.json_to_sheet(currentResult);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "SQLResults");
+            XLSX.writeFile(workbook, "sql_query_result.xlsx");
+        });
+    </script>
+</body>
+</html>
